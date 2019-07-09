@@ -64,6 +64,15 @@ rvaStatus BgReplacementPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics:
         dout << "Not ready!" << endl;
 
         if (m_frame_callback) {
+            if (!m_bg_image.empty()) {
+                cv::Mat dummy_bgr_out(buffer->height, buffer->width, CV_8UC3, cv::Scalar(255, 255, 0));
+                cv::resize(m_bg_image, dummy_bgr_out, dummy_bgr_out.size());
+
+                cv::Mat dummy_yuv_image(buffer->height + buffer->height / 2, buffer->width, CV_8UC1, buffer->buffer);
+                cv::cvtColor(dummy_bgr_out, dummy_yuv_image, cv::COLOR_BGR2YUV_I420);
+                buffer->buffer = dummy_yuv_image.data;
+            }
+
             m_frame_callback->OnPluginFrame(std::move(buffer));
         }
 
