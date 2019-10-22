@@ -25,7 +25,9 @@ void __now() {
     std::cout << buf << "." << std::setw(3) << std::setfill('1') << curTime.tv_usec / 1001;
 }
 
-bool loadModel(std::string m_device, std::string m_model, InferencePlugin *m_plugin, InferRequest *m_infer_request, Blob::Ptr *m_input_blob, Blob::Ptr *m_output_blob) {
+bool loadModel(std::string m_device, std::string m_model, InferencePlugin *m_plugin, \
+        InferRequest *m_infer_request, Blob::Ptr *m_input_blob, Blob::Ptr *m_output_blob, \
+        Precision input_precision) {
     const InferenceEngine::Version *version = GetInferenceEngineVersion();
     cout << "InferenceEngineVersion: " << endl;
     cout << "\tAPI version .......... " << version->apiVersion.major << "." << version->apiVersion.minor << endl;
@@ -85,7 +87,7 @@ bool loadModel(std::string m_device, std::string m_model, InferencePlugin *m_plu
 
     /** Taking information about all topology inputs **/
     InputsDataMap inputsInfo(network.getInputsInfo());
-    if (inputsInfo.size() != 1) throw std::logic_error("Sample supports topologies only with 1 input");
+    //if (inputsInfo.size() != 1) throw std::logic_error("Sample supports topologies only with 1 input");
 
     std::string imageInputName, imInfoInputName;
     imageInputName = inputsInfo.begin()->first;
@@ -100,7 +102,7 @@ bool loadModel(std::string m_device, std::string m_model, InferencePlugin *m_plu
     //int modelInputSize = inputInfo->getInputData()->getTensorDesc().getDims()[3];
 
     /** Creating first input blob **/
-    Precision inputPrecision = Precision::U8;
+    Precision inputPrecision = input_precision;
     inputInfo->setPrecision(inputPrecision);
     cout << "\tPrecision: " << inputPrecision << endl;
     // -----------------------------------------------------------------------------------------------------

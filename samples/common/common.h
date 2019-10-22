@@ -15,7 +15,9 @@
 #define dout __now();std::cout << "  - " << "Plugin" << " - " << __FUNCTION__ << ":" << __LINE__ << " - "
 
 void __now();
-bool loadModel(std::string m_device, std::string m_model, InferenceEngine::InferencePlugin *m_plugin, InferenceEngine::InferRequest *m_infer_request, InferenceEngine::Blob::Ptr *m_input_blob, InferenceEngine::Blob::Ptr *m_output_blob);
+bool loadModel(std::string m_device, std::string m_model, InferenceEngine::InferencePlugin *m_plugin, \
+        InferenceEngine::InferRequest *m_infer_request, InferenceEngine::Blob::Ptr *m_input_blob, InferenceEngine::Blob::Ptr *m_output_blob, \
+        InferenceEngine::Precision input_precision = InferenceEngine::Precision::U8);
 
 template <typename T>
 void matU8ToBlob(const cv::Mat& orig_image, InferenceEngine::Blob::Ptr& blob, float scaleFactor = 1.0, int batchIndex = 0) {
