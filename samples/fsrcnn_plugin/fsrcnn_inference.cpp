@@ -58,6 +58,14 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
         return false;
     }
 
+    if (sr_image.type() != CV_8UC1
+        || sr_image.size().width != m_output_width
+        || sr_image.size().height != m_output_height * 3 / 2) {
+
+        dout << "Invalid output image type or resolution" << endl;
+        return false;
+    }
+
     uploadToBlob(image, m_input_blob);
 
     dout << "+++do_infer" << endl;
@@ -81,8 +89,6 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
         cv::cvtColor(resized_bgr_image, cubic_yuv_image, cv::COLOR_BGR2YUV_I420);
     }
 
-    sr_image.create(m_output_height * 3 / 2, m_output_width, CV_8UC1);
-
     for (size_t i = 0; i < h; i++) {
         for (size_t j = 0; j < w; j++) {
             float data;
@@ -98,7 +104,9 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
         }
     }
 
-    memcpy(sr_image.data, cubic_yuv_image.data, m_output_width * m_output_height / 2);
+    memcpy(sr_image.data + m_output_width * m_output_height,
+            cubic_yuv_image.data + m_output_width * m_output_height,
+            m_output_width * m_output_height / 2);
 
     return true;
 }

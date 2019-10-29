@@ -60,6 +60,8 @@ private:
     std::shared_ptr<FSRCNNInference> m_sr_infer;
     uint32_t m_lr_width;
     uint32_t m_lr_height;
+    uint32_t m_sr_width;
+    uint32_t m_sr_height;
 };
 
 #endif  //FACE_REPLACEMENT_PLUGIN_H

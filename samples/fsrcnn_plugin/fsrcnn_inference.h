@@ -19,6 +19,9 @@ public:
     uint32_t getInputWidth() {return m_input_width;}
     uint32_t getInputHeight() {return m_input_height;}
 
+    uint32_t getOutputWidth() {return m_output_width;}
+    uint32_t getOutputHeight() {return m_output_height;}
+
     bool infer(cv::Mat& image, cv::Mat& sr_image);
 
 protected:
