@@ -77,12 +77,19 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
 
     cv::Mat resized_bgr_image(bgr_image);
     if (m_lr_width != bgr_image.size().width || m_lr_height!= bgr_image.size().height) {
+        dout << "Resize input image: "
+            << bgr_image.size().width << "x" << bgr_image.size().height
+            << " -> "
+            << m_lr_width << "x" << m_lr_height
+            << endl;
+
         cv::resize(bgr_image, resized_bgr_image, cv::Size(m_lr_width, m_lr_height));
     }
+    cv::Mat resized_yuv_image;
+    cv::cvtColor(resized_bgr_image, resized_yuv_image, cv::COLOR_BGR2YUV_I420);
 
-    cv::Mat sr_bgr_image;
-
-    int ret = m_sr_infer->infer(resized_bgr_image, sr_bgr_image);
+    cv::Mat sr_yuv_image;
+    int ret = m_sr_infer->infer(resized_yuv_image, sr_yuv_image);
     if (!ret) {
         dout << "Infer error!" << endl;
 
@@ -93,14 +100,13 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
         return RVA_ERR_OK;
     }
 
-    uint8_t *sr_yuv_data = new uint8_t[sr_bgr_image.size().width * sr_bgr_image.size().height * 3 / 2];
-    cv::Mat sr_yuv_image(sr_bgr_image.size().height * 3 / 2, sr_bgr_image.size().width, CV_8UC1, sr_yuv_data);
-    cv::cvtColor(sr_bgr_image, sr_yuv_image, cv::COLOR_BGR2YUV_I420);
+    uint8_t *sr_yuv_data = new uint8_t[sr_yuv_image.size().width * sr_yuv_image.size().height * 3 / 2];
+    memcpy(sr_yuv_data, sr_yuv_image.data, sr_yuv_image.size().width * sr_yuv_image.size().height * 3 / 2);
 
     std::unique_ptr<owt::analytics::AnalyticsBuffer> sr_buffer(new owt::analytics::AnalyticsBuffer());
     sr_buffer->buffer = sr_yuv_data;
-    sr_buffer->width = sr_bgr_image.size().width;
-    sr_buffer->height = sr_bgr_image.size().height;
+    sr_buffer->width = sr_yuv_image.size().width;
+    sr_buffer->height = sr_yuv_image.size().height;
 
     if (m_frame_callback) {
         m_frame_callback->OnPluginFrame(std::move(sr_buffer));

@@ -21,6 +21,9 @@ public:
 
     bool infer(cv::Mat& image, cv::Mat& sr_image);
 
+protected:
+    void uploadToBlob(const cv::Mat& image, InferenceEngine::Blob::Ptr& blob);
+
 private:
     std::string m_device;
     std::string m_model;
@@ -30,8 +33,6 @@ private:
 
     Blob::Ptr m_input_blob;
     Blob::Ptr m_output_blob;
-
-    Blob::Ptr m_bic_input_blob;
 
     uint32_t m_input_width;
     uint32_t m_input_height;
