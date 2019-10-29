@@ -10,6 +10,8 @@
 #include "common.h"
 #include "fsrcnn_plugin.h"
 
+#include "libyuv/scale.h"
+
 using namespace std;
 
 void init_worker(FSRCNNPlugin *plugin) {
@@ -74,6 +76,30 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
 
     dout << "+++" << endl;
 
+#define LIBYUV
+
+#ifdef LIBYUV
+    cv::Mat resized_yuv_image(m_lr_height * 3 / 2, m_lr_width, CV_8UC1);
+
+    libyuv::I420Scale(
+            buffer->buffer,
+            buffer->width,
+            buffer->buffer + buffer->width * buffer->height,
+            buffer->width / 2,
+            buffer->buffer + buffer->width * buffer->height * 5 / 4,
+            buffer->width / 2,
+            buffer->width, buffer->height,
+            resized_yuv_image.data,
+            m_lr_width,
+            resized_yuv_image.data + m_lr_width * m_lr_height,
+            m_lr_width / 2,
+            resized_yuv_image.data + m_lr_width * m_lr_height * 5 /4,
+            m_lr_width / 2,
+            m_lr_width, m_lr_height,
+            libyuv::kFilterBox); //kFilterBilinear
+
+    dout << "libyuv" << endl;
+#else
     cv::Mat yuv_image(buffer->height + buffer->height / 2, buffer->width, CV_8UC1, buffer->buffer);
     cv::Mat bgr_image(buffer->height, buffer->width, CV_8UC3);
     cv::cvtColor(yuv_image, bgr_image, cv::COLOR_YUV2BGR_I420);
@@ -90,6 +116,9 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
     }
     cv::Mat resized_yuv_image;
     cv::cvtColor(resized_bgr_image, resized_yuv_image, cv::COLOR_BGR2YUV_I420);
+
+    dout << "opencv" << endl;
+#endif
 
     uint8_t *sr_yuv_data = new uint8_t[m_sr_width * m_sr_height * 3 / 2];
     cv::Mat sr_yuv_image(m_sr_height * 3 / 2, m_sr_width, CV_8UC1, sr_yuv_data);

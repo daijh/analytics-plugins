@@ -37,4 +37,8 @@ target_link_libraries(${TARGET_NAME} ${InferenceEngine_LIBRARIES} IE::ie_cpu_ext
 target_link_libraries(${TARGET_NAME} ${OpenCV_LIBRARIES})
 target_link_libraries(${TARGET_NAME} pthread)
 
+set(LIBYUV "/home/webrtc/dev/webrtc/owt-server/source/agent/analytics-plugins/libyuv-out/")
+include_directories(${LIBYUV}/include)
+target_link_libraries(${TARGET_NAME} ${LIBYUV}/lib/libyuv.so)
+
 #add_subdirectory(test)

@@ -10,6 +10,8 @@
 #include "common.h"
 #include "fsrcnn_inference.h"
 
+#include "libyuv/scale.h"
+
 using namespace std;
 using namespace InferenceEngine;
 
@@ -76,6 +78,30 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
     size_t h = m_output_blob->getTensorDesc().getDims()[2];
     size_t w = m_output_blob->getTensorDesc().getDims()[3];
 
+#define LIBYUV
+
+#ifdef LIBYUV
+    uint8_t *cubic_yuv_data = (uint8_t *)malloc(w * h * 3 / 2);
+
+    libyuv::I420Scale(
+            image.data,
+            m_input_width,
+            image.data + m_input_width * m_input_height,
+            m_input_width / 2,
+            image.data + m_input_width * m_input_height * 5 / 4,
+            m_input_width / 2,
+            m_input_width, m_input_height,
+            cubic_yuv_data,
+            m_output_width,
+            cubic_yuv_data + m_output_width * m_output_height,
+            m_output_width / 2,
+            cubic_yuv_data + m_output_width * m_output_height * 5 /4,
+            m_output_width / 2,
+            m_output_width, m_output_height,
+            libyuv::kFilterBox); //kFilterBilinear
+
+    dout << "libyuv" << endl;
+#else
     cv::Mat cubic_yuv_image(h, w, CV_8UC3);
 
     // fix me
@@ -88,6 +114,11 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
 
         cv::cvtColor(resized_bgr_image, cubic_yuv_image, cv::COLOR_BGR2YUV_I420);
     }
+
+    uint8_t *cubic_yuv_data = cubic_yuv_image.data;
+
+    dout << "opencv" << endl;
+#endif
 
     for (size_t i = 0; i < h; i++) {
         for (size_t j = 0; j < w; j++) {
@@ -105,7 +136,7 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
     }
 
     memcpy(sr_image.data + m_output_width * m_output_height,
-            cubic_yuv_image.data + m_output_width * m_output_height,
+            cubic_yuv_data + m_output_width * m_output_height,
             m_output_width * m_output_height / 2);
 
     return true;
@@ -122,11 +153,5 @@ void FSRCNNInference::uploadToBlob(const cv::Mat& image, InferenceEngine::Blob::
             blob_data[h * width + w] = image.at<uchar>(h * width + w) / 255.0;
         }
     }
-
-#if 1
-    for(size_t i = 0; i < 10; i++)
-        printf("%f\t", blob_data[i]);
-    printf("\n");
-#endif
 }
 
