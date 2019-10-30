@@ -79,24 +79,34 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
 #define LIBYUV
 
 #ifdef LIBYUV
-    cv::Mat resized_yuv_image(m_lr_height * 3 / 2, m_lr_width, CV_8UC1);
+    cv::Mat resized_yuv_image(buffer->height + buffer->height / 2, buffer->width, CV_8UC1, buffer->buffer);
 
-    libyuv::I420Scale(
-            buffer->buffer,
-            buffer->width,
-            buffer->buffer + buffer->width * buffer->height,
-            buffer->width / 2,
-            buffer->buffer + buffer->width * buffer->height * 5 / 4,
-            buffer->width / 2,
-            buffer->width, buffer->height,
-            resized_yuv_image.data,
-            m_lr_width,
-            resized_yuv_image.data + m_lr_width * m_lr_height,
-            m_lr_width / 2,
-            resized_yuv_image.data + m_lr_width * m_lr_height * 5 /4,
-            m_lr_width / 2,
-            m_lr_width, m_lr_height,
-            libyuv::kFilterBox); //kFilterBilinear
+    if (m_lr_width != buffer->width || m_lr_height!= buffer->height) {
+        dout << "Resize input image: "
+            << buffer->width << "x" << buffer->height
+            << " -> "
+            << m_lr_width << "x" << m_lr_height
+            << endl;
+
+        resized_yuv_image.create(m_lr_height * 3 / 2, m_lr_width, CV_8UC1);
+
+        libyuv::I420Scale(
+                buffer->buffer,
+                buffer->width,
+                buffer->buffer + buffer->width * buffer->height,
+                buffer->width / 2,
+                buffer->buffer + buffer->width * buffer->height * 5 / 4,
+                buffer->width / 2,
+                buffer->width, buffer->height,
+                resized_yuv_image.data,
+                m_lr_width,
+                resized_yuv_image.data + m_lr_width * m_lr_height,
+                m_lr_width / 2,
+                resized_yuv_image.data + m_lr_width * m_lr_height * 5 /4,
+                m_lr_width / 2,
+                m_lr_width, m_lr_height,
+                libyuv::kFilterBox); //kFilterBilinear
+    }
 
     dout << "libyuv" << endl;
 #else
