@@ -37,7 +37,8 @@ FSRCNNPlugin::FSRCNNPlugin()
     : m_ready(false)
     , m_init_thread(NULL)
     , m_lr_width(0)
-    , m_lr_height(0) {
+    , m_lr_height(0)
+    , m_ratio(0.0) {
     dout << endl;
 
     m_init_thread = new std::thread(init_worker, this);
@@ -76,9 +77,6 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
 
     dout << "+++" << endl;
 
-#define LIBYUV
-
-#ifdef LIBYUV
     cv::Mat resized_yuv_image(buffer->height + buffer->height / 2, buffer->width, CV_8UC1, buffer->buffer);
 
     if (m_lr_width != buffer->width || m_lr_height!= buffer->height) {
@@ -108,28 +106,6 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
                 libyuv::kFilterBox); //kFilterBilinear
     }
 
-    dout << "libyuv" << endl;
-#else
-    cv::Mat yuv_image(buffer->height + buffer->height / 2, buffer->width, CV_8UC1, buffer->buffer);
-    cv::Mat bgr_image(buffer->height, buffer->width, CV_8UC3);
-    cv::cvtColor(yuv_image, bgr_image, cv::COLOR_YUV2BGR_I420);
-
-    cv::Mat resized_bgr_image(bgr_image);
-    if (m_lr_width != bgr_image.size().width || m_lr_height!= bgr_image.size().height) {
-        dout << "Resize input image: "
-            << bgr_image.size().width << "x" << bgr_image.size().height
-            << " -> "
-            << m_lr_width << "x" << m_lr_height
-            << endl;
-
-        cv::resize(bgr_image, resized_bgr_image, cv::Size(m_lr_width, m_lr_height));
-    }
-    cv::Mat resized_yuv_image;
-    cv::cvtColor(resized_bgr_image, resized_yuv_image, cv::COLOR_BGR2YUV_I420);
-
-    dout << "opencv" << endl;
-#endif
-
     uint8_t *sr_yuv_data = new uint8_t[m_sr_width * m_sr_height * 3 / 2];
     cv::Mat sr_yuv_image(m_sr_height * 3 / 2, m_sr_width, CV_8UC1, sr_yuv_data);
 
@@ -154,6 +130,25 @@ rvaStatus FSRCNNPlugin::ProcessFrameAsync(std::unique_ptr<owt::analytics::Analyt
     }
 
     dout << "---" << endl;
+
+    return RVA_ERR_OK;
+}
+
+rvaStatus FSRCNNPlugin::SetPluginParams(std::unordered_map<std::string, std::string> params) {
+    if (!m_ready) {
+        dout << "Not ready!" << endl;
+    }
+
+    std::unordered_map<std::string, std::string>::const_iterator got = params.find("ratio");
+    if ( got == params.end() ) {
+        dout << "Invalid to set plugin params" << endl;
+        return RVA_ERR_OK;
+    }
+
+    m_ratio = atof(got->second.c_str());
+    dout << "Set ratio " << got->second << " -> " << m_ratio << endl;
+
+    m_sr_infer->enable(m_ratio > 0.0);
 
     return RVA_ERR_OK;
 }

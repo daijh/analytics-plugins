@@ -24,6 +24,8 @@ public:
 
     bool infer(cv::Mat& image, cv::Mat& sr_image);
 
+    void enable(bool enable) {m_enable = enable;};
+
 protected:
     void uploadToBlob(const cv::Mat& image, InferenceEngine::Blob::Ptr& blob);
 
@@ -42,6 +44,8 @@ private:
 
     uint32_t m_output_width;
     uint32_t m_output_height;
+
+    bool    m_enable;
 };
 
 #endif //FACE_REIDENTIFICATION_H

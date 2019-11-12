@@ -19,18 +19,19 @@ FSRCNNInference::FSRCNNInference(std::string device)
     : m_input_width(0)
     , m_input_height(0)
     , m_output_width(0)
-    , m_output_height(0) {
+    , m_output_height(0)
+    , m_enable(false) {
     dout << "Cons device: "<< device << endl;
 
     if (!device.compare("CPU")) {
         m_device = "CPU";
-        m_model = "fsrcnn-model/fsrcnn_x3.xml";
+        m_model = "fsrcnn-model/fsrcnn.xml";
     } else if (!device.compare("GPU")) {
         m_device = "GPU";
-        m_model = "fsrcnn-model/fsrcnn_x3.xml";
+        m_model = "fsrcnn-model/fsrcnn.xml";
     } else {
         m_device = "CPU";
-        m_model = "fsrcnn-model/fsrcnn_x3.xml";
+        m_model = "fsrcnn-model/fsrcnn.xml";
     }
 }
 
@@ -78,10 +79,7 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
     size_t h = m_output_blob->getTensorDesc().getDims()[3];
     size_t w = m_output_blob->getTensorDesc().getDims()[2];
 
-#define LIBYUV
-
-#ifdef LIBYUV
-    uint8_t *cubic_yuv_data = (uint8_t *)malloc(w * h * 3 / 2);
+    uint8_t *cubic_yuv_data = sr_image.data;
 
     libyuv::I420Scale(
             image.data,
@@ -100,44 +98,24 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
             m_output_width, m_output_height,
             libyuv::kFilterBox); //kFilterBilinear
 
-    dout << "libyuv" << endl;
-#else
-    cv::Mat cubic_yuv_image(h, w, CV_8UC3);
+    if (m_enable) {
+        dout << "do SR" << endl;
 
-    // fix me
-    {
-        cv::Mat orig_bgr_image;
-        cv::cvtColor(image, orig_bgr_image, cv::COLOR_YUV2BGR_I420);
+        for (size_t i = 0; i < h; i++) {
+            for (size_t j = w / 2; j < w; j++) {
+                float data;
 
-        cv::Mat resized_bgr_image;
-        cv::resize(orig_bgr_image, resized_bgr_image, cv::Size(m_output_width, m_output_height), 0, 0, cv::INTER_CUBIC);
+                if (outputData[j * h + i] > 1.0)
+                    data = 1.0;
+                else if (outputData[j * h + i] < 0.0)
+                    data = 0.0;
+                else
+                    data = outputData[j * h + i];
 
-        cv::cvtColor(resized_bgr_image, cubic_yuv_image, cv::COLOR_BGR2YUV_I420);
-    }
-
-    uint8_t *cubic_yuv_data = cubic_yuv_image.data;
-
-    dout << "opencv" << endl;
-#endif
-
-    for (size_t i = 0; i < h; i++) {
-        for (size_t j = 0; j < w; j++) {
-            float data;
-
-            if (outputData[j * h + i] > 1.0)
-                data = 1.0;
-            else if (outputData[j * h + i] < 0.0)
-                data = 0.0;
-            else
-                data = outputData[j * h + i];
-
-            sr_image.at<uchar>(i * w + j) = data * 255.0;
+                sr_image.at<uchar>(i * w + j) = data * 255.0;
+            }
         }
     }
-
-    memcpy(sr_image.data + m_output_width * m_output_height,
-            cubic_yuv_data + m_output_width * m_output_height,
-            m_output_width * m_output_height / 2);
 
     return true;
 }

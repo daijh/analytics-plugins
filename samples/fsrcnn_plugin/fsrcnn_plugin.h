@@ -22,9 +22,7 @@ public:
         return RVA_ERR_OK;
     }
 
-    virtual rvaStatus SetPluginParams(std::unordered_map<std::string, std::string> params) {
-        return RVA_ERR_OK;
-    }
+    virtual rvaStatus SetPluginParams(std::unordered_map<std::string, std::string> params);
 
     virtual rvaStatus ProcessFrameAsync(std::unique_ptr<owt::analytics::AnalyticsBuffer> buffer);
 
@@ -62,6 +60,8 @@ private:
     uint32_t m_lr_height;
     uint32_t m_sr_width;
     uint32_t m_sr_height;
+
+    float m_ratio;
 };
 
 #endif  //FACE_REPLACEMENT_PLUGIN_H
