@@ -115,6 +115,14 @@ bool FSRCNNInference::infer(cv::Mat& image, cv::Mat& sr_image)
                 sr_image.at<uchar>(i * w + j) = data * 255.0;
             }
         }
+
+        for (size_t i = 0; i < h; i++) {
+            for (size_t j = w / 2 - 5; j < w / 2 + 5; j++) {
+                sr_image.at<uchar>(i * w + j) = 145;
+                sr_image.at<uchar>(w * h + i / 2 * w / 2 + j / 2) = 54;
+                sr_image.at<uchar>(w * h * 5 / 4 + i /2 * w / 2 + j / 2) = 34;
+            }
+        }
     }
 
     return true;
