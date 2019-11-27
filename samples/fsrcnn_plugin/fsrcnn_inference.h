@@ -16,6 +16,8 @@ public:
 
     bool init();
 
+    void calcAlphaBeta(cv::Mat& img);
+
     uint32_t getInputWidth() {return m_input_width;}
     uint32_t getInputHeight() {return m_input_height;}
 
@@ -46,6 +48,10 @@ private:
     uint32_t m_output_height;
 
     bool    m_enable;
+
+    uint32_t m_frame_count;
+    float m_alpha;
+    float m_beta;
 };
 
 #endif //FACE_REIDENTIFICATION_H
